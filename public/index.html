@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rustlers - Hot in 5</title>
+    <style>
+        :root {
+            --black: #000000;
+            --white: #FFFFFF;
+            --grey-100: rgba(17, 17, 17, 0.8);
+            --grey-200: rgba(26, 26, 26, 0.6);
+            --grey-300: rgba(42, 42, 42, 0.4);
+            --accent: #FFFFFF;
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+            --backdrop-filter: blur(10px) saturate(180%);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--black);
+            color: var(--white);
+            line-height: 1.4;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            padding-top: var(--safe-area-top);
+            padding-bottom: var(--safe-area-bottom);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            max-width: 100%;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            position: relative;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: var(--white);
+            text-transform: uppercase;
+        }
+
+        .header p {
+            margin: 0.5rem 0 0;
+            font-size: 0.875rem;
+            color: var(--white);
+            opacity: 0.6;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        .map-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--grey-100);
+            height: 60vh;
+            min-height: 400px;
+            width: 100%;
+            border: 1px solid var(--grey-300);
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .status-card {
+            background: var(--grey-200);
+            padding: 1.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--grey-300);
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .status-card:active {
+            transform: scale(0.98);
+            background: var(--grey-300);
+        }
+
+        /* Add frosted glass effect to Smart Plug Status card */
+        .status-card:first-child {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .status-card:first-child:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Add green background when Smart Plug is ON */
+        .status-card:first-child.on {
+            background: rgba(76, 175, 80, 0.4);
+            border: 1px solid rgba(76, 175, 80, 0.6);
+        }
+
+        .status-card:first-child.on:active {
+            background: rgba(76, 175, 80, 0.5);
+        }
+
+        /* Add red background when Smart Plug is OFF */
+        .status-card:first-child.off {
+            background: rgba(244, 67, 54, 0.4);
+            border: 1px solid rgba(244, 67, 54, 0.6);
+        }
+
+        .status-card:first-child.off:active {
+            background: rgba(244, 67, 54, 0.5);
+        }
+
+        /* Add frosted glass effect to Time Away card */
+        .status-card:nth-child(2) {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-card:nth-child(2):active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Add frosted glass effect to Distance card */
+        .status-card:nth-child(3) {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-card:nth-child(3):active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Add frosted glass effect to ETA card */
+        .status-card:nth-child(4) {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-card:nth-child(4):active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .status-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--white);
+            opacity: 0.6;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .time-control {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .time-control input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--grey-300);
+            border-radius: 6px;
+            font-size: 1rem;
+            color: var(--white);
+            background: var(--grey-100);
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .time-control input:focus {
+            outline: none;
+            border-color: var(--white);
+        }
+
+        .time-control button {
+            padding: 0.75rem 1rem;
+            background: var(--white);
+            color: var(--black);
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .time-control button:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 26, 26, 0.6);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            z-index: 1000;
+            animation: fadeIn 0.4s ease-out;
+            max-width: 90%;
+            width: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .popup h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            filter: grayscale(100%) contrast(200%);
+        }
+
+        .popup h2 .emoji {
+            filter: none;
+            display: inline-block;
+            margin-left: 0.5rem;
+        }
+
+        .popup p {
+            margin: 0;
+            color: var(--white);
+            font-size: 1rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .popup button {
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            -webkit-tap-highlight-color: transparent;
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+        }
+
+        .popup button:active {
+            transform: scale(0.98);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 2rem;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .content {
+                flex-direction: row;
+            }
+
+            .map-container {
+                height: auto;
+            }
+
+            .status-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* iPhone 15 Pro Max specific optimizations */
+        @media (max-width: 430px) and (max-height: 932px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .map-container {
+                height: 45vh;
+            }
+
+            .status-card {
+                padding: 1rem;
+            }
+
+            .status-value {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Rustlers Delivery Tracker</h1>
+            <p>Track your delivery in real-time</p>
+        </div>
+        
+        <div class="content">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+            
+            <div class="status-panel">
+                <div class="status-card">
+                    <h3>Smart Plug Status</h3>
+                    <div class="status-value" id="trigger-status">Waiting</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Time Away from Customer</h3>
+                    <div class="time-control">
+                        <input type="number" id="time-away-input" min="0" max="60" placeholder="Enter minutes (0-60)">
+                        <button id="update-time">Update</button>
+                    </div>
+                    <div class="status-value" id="time-away">Current: 5 minutes</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Distance to Customer</h3>
+                    <div class="status-value" id="distance">0.6 miles</div>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Estimated Time of Arrival</h3>
+                    <div class="status-value" id="eta">5 minutes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cooking-popup" class="popup" style="display: none;">
+        <h2>Cooking! <span class="emoji">🍔</span></h2>
+        <p>Your Rustlers meal is being prepared</p>
+        <button onclick="document.getElementById('cooking-popup').style.display = 'none'">Got it!</button>
+    </div>
+
+    <div id="delivered-popup" class="popup" style="display: none;">
+        <h2>Delivered! <span class="emoji">🛍️</span></h2>
+        <p>Your Rustlers meal has arrived</p>
+        <button onclick="document.getElementById('delivered-popup').style.display = 'none'">Enjoy!</button>
+    </div>
+
+    <script>
+        let map;
+        let driverMarker;
+        let customerMarker;
+        let directionsRenderer;
+        let directionsService;
+        let driverInfoWindow;
+        let customerInfoWindow;
+        let animationSpeed = 1;
+        let routePath = null;
+        let currentPosition = 0;
+        let isAnimating = false;
+        let animationFrame = null;
+        let hasTriggeredPopup = false;
+        let hasTriggeredDelivered = false;
+        let startTime = null;
+        let timeAwayInterval = null;
+        let currentPolyline = null;
+
+        const TRIGGER_DISTANCE_MILES = 0.6;
+        const DELIVERY_DISTANCE_MILES = 0.1;
+        const ANIMATION_SPEED = 0.0005;
+
+        const DEFAULT_COORDINATES = {
+            customer: { lat: 51.5200, lng: -0.1050 },
+            driver: { 
+                lat: 51.5200 + (2 / 69) * 0.707, // 2 miles northeast
+                lng: -0.1050 + (2 / 69) * 0.707
+            }
+        };
+
+        function initMap() {
+            try {
+                console.log('Initializing map...');
+                const mapElement = document.getElementById('map');
+                if (!mapElement) {
+                    console.error('Map element not found');
+                    return;
+                }
+
+                map = new google.maps.Map(mapElement, {
+                    zoom: 13,
+                    center: DEFAULT_COORDINATES.customer,
+                    mapTypeControl: false,
+                    streetViewControl: false,
+                    fullscreenControl: false,
+                    styles: [
+                        {
+                            "featureType": "all",
+                            "elementType": "geometry",
+                            "stylers": [{"color": "#1a1a1a"}]
+                        },
+                        {
+                            "featureType": "all",
+                            "elementType": "labels.text.fill",
+                            "stylers": [{"color": "#ffffff"}]
+                        },
+                        {
+                            "featureType": "all",
+                            "elementType": "labels.text.stroke",
+                            "stylers": [{"visibility": "off"}]
+                        },
+                        {
+                            "featureType": "all",
+                            "elementType": "labels.icon",
+                            "stylers": [{"visibility": "off"}]
+                        },
+                        {
+                            "featureType": "administrative",
+                            "elementType": "geometry.fill",
+                            "stylers": [{"color": "#000000"}]
+                        },
+                        {
+                            "featureType": "administrative",
+                            "elementType": "geometry.stroke",
+                            "stylers": [{"color": "#2a2a2a"}]
+                        },
+                        {
+                            "featureType": "landscape",
+                            "elementType": "all",
+                            "stylers": [{"color": "#000000"}]
+                        },
+                        {
+                            "featureType": "poi",
+                            "elementType": "all",
+                            "stylers": [{"visibility": "off"}]
+                        },
+                        {
+                            "featureType": "road",
+                            "elementType": "all",
+                            "stylers": [{"color": "#1a1a1a"}]
+                        },
+                        {
+                            "featureType": "road",
+                            "elementType": "geometry.stroke",
+                            "stylers": [{"color": "#2a2a2a"}]
+                        },
+                        {
+                            "featureType": "road.highway",
+                            "elementType": "geometry.fill",
+                            "stylers": [{"color": "#1a1a1a"}]
+                        },
+                        {
+                            "featureType": "road.highway",
+                            "elementType": "geometry.stroke",
+                            "stylers": [{"color": "#2a2a2a"}]
+                        },
+                        {
+                            "featureType": "road.arterial",
+                            "elementType": "geometry.fill",
+                            "stylers": [{"color": "#1a1a1a"}]
+                        },
+                        {
+                            "featureType": "road.arterial",
+                            "elementType": "geometry.stroke",
+                            "stylers": [{"color": "#2a2a2a"}]
+                        },
+                        {
+                            "featureType": "road.local",
+                            "elementType": "geometry",
+                            "stylers": [{"color": "#1a1a1a"}]
+                        },
+                        {
+                            "featureType": "transit",
+                            "elementType": "all",
+                            "stylers": [{"visibility": "off"}]
+                        },
+                        {
+                            "featureType": "water",
+                            "elementType": "all",
+                            "stylers": [{"color": "#000000"}]
+                        }
+                    ]
+                });
+
+                directionsService = new google.maps.DirectionsService();
+                directionsRenderer = new google.maps.DirectionsRenderer({
+                    map: map,
+                    suppressMarkers: true,
+                    suppressPolylines: true
+                });
+
+                // Create driver marker
+                driverMarker = new google.maps.Marker({
+                    map: map,
+                    position: DEFAULT_COORDINATES.driver,
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" fill="white"/>
+                                <text x="12" y="16" font-family="Arial" font-size="12" font-weight="bold" text-anchor="middle" fill="black">D</text>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(24, 24),
+                        anchor: new google.maps.Point(12, 12)
+                    },
+                    title: 'Driver'
+                });
+
+                // Create customer marker
+                customerMarker = new google.maps.Marker({
+                    map: map,
+                    position: DEFAULT_COORDINATES.customer,
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" fill="white"/>
+                                <text x="12" y="16" font-family="Arial" font-size="12" font-weight="bold" text-anchor="middle" fill="black">C</text>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(24, 24),
+                        anchor: new google.maps.Point(12, 12)
+                    },
+                    title: 'Customer'
+                });
+
+                // Create info windows
+                driverInfoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div class="info-window">
+                            <h3>Driver</h3>
+                            <p>ETA: <span id="driver-eta">Calculating...</span></p>
+                            <p>Speed: <span id="driver-speed">0</span> mph</p>
+                        </div>
+                    `
+                });
+
+                customerInfoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div class="info-window">
+                            <h3>Customer Location</h3>
+                            <p>20 Farringdon Place</p>
+                            <p>London EC1M 3HE</p>
+                        </div>
+                    `
+                });
+
+                // Add click listeners to markers
+                driverMarker.addListener('click', () => {
+                    driverInfoWindow.open(map, driverMarker);
+                });
+                customerMarker.addListener('click', () => {
+                    customerInfoWindow.open(map, customerMarker);
+                });
+
+                // Add speed control listener
+                document.getElementById('animation-speed').addEventListener('input', (e) => {
+                    animationSpeed = parseFloat(e.target.value);
+                });
+
+                // Update initial location displays
+                updateLocationDisplays(DEFAULT_COORDINATES.driver, DEFAULT_COORDINATES.customer);
+                updateLastUpdateTime();
+
+                console.log('Map initialized, updating route...');
+                // Initial route update
+                updateMap(DEFAULT_COORDINATES.driver, DEFAULT_COORDINATES.customer);
+                console.log('Map initialized successfully');
+            } catch (error) {
+                console.error('Error initializing map:', error);
+            }
+        }
+
+        function updateTriggerStatus(distance) {
+            const triggerStatus = document.getElementById('trigger-status');
+            const statusCard = document.querySelector('.status-card:first-child');
+            
+            if (distance <= TRIGGER_DISTANCE_MILES) {
+                triggerStatus.textContent = 'ON';
+                statusCard.classList.add('on');
+            } else {
+                triggerStatus.textContent = 'Waiting';
+                statusCard.classList.remove('on');
+            }
+        }
+
+        function animateDriver() {
+            if (!routePath || !isAnimating) {
+                console.log('Animation stopped:', { 
+                    routePath: !!routePath, 
+                    isAnimating,
+                    routePathLength: routePath ? routePath.length : 0,
+                    currentPosition,
+                    animationSpeed
+                });
+                return;
+            }
+
+            const numPoints = routePath.length;
+            currentPosition = (currentPosition + ANIMATION_SPEED * animationSpeed) % 1;
+            const pointIndex = Math.floor(currentPosition * numPoints);
+            const point = routePath[pointIndex];
+            
+            console.log('Animation frame:', {
+                currentPosition,
+                pointIndex,
+                numPoints,
+                hasPoint: !!point,
+                animationSpeed
+            });
+            
+            if (point) {
+                driverMarker.setPosition(point);
+                
+                const distanceToCustomer = google.maps.geometry.spherical.computeDistanceBetween(
+                    point,
+                    customerMarker.getPosition()
+                ) / 1609.34;
+
+                // Update distance and ETA in real-time
+                updateLocationDisplays(point, customerMarker.getPosition());
+                updateETA(distanceToCustomer);
+                updateTriggerStatus(distanceToCustomer);
+
+                if (distanceToCustomer <= TRIGGER_DISTANCE_MILES && !hasTriggeredPopup) {
+                    showCookingPopup();
+                    hasTriggeredPopup = true;
+                }
+
+                if (distanceToCustomer <= DELIVERY_DISTANCE_MILES && !hasTriggeredDelivered) {
+                    showDeliveredPopup();
+                    hasTriggeredDelivered = true;
+                    isAnimating = false; // Stop animation when delivered
+                }
+                
+                // Update polyline opacity based on driver position
+                updatePolylineOpacity(currentPosition);
+            }
+            
+            animationFrame = requestAnimationFrame(animateDriver);
+        }
+
+        function updatePolylineOpacity(position) {
+            try {
+                const directions = directionsRenderer.getDirections();
+                if (!directions || !directions.routes || !directions.routes[0]) {
+                    console.error('No directions available for polyline update');
+                    return;
+                }
+
+                const polyline = directions.routes[0].overview_path;
+                const numPoints = polyline.length;
+                const currentIndex = Math.floor(position * numPoints);
+                
+                console.log('Updating polyline opacity:', {
+                    position,
+                    currentIndex,
+                    numPoints
+                });
+                
+                // Remove the old polyline if it exists
+                if (currentPolyline) {
+                    currentPolyline.setMap(null);
+                }
+                
+                // Create a new path with only the points ahead of the driver
+                const remainingPath = polyline.slice(currentIndex);
+                
+                // Create a new polyline with only the remaining path
+                currentPolyline = new google.maps.Polyline({
+                    path: remainingPath,
+                    strokeColor: '#ffffff',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 3,
+                    map: map
+                });
+            } catch (error) {
+                console.error('Error updating polyline opacity:', error);
+            }
+        }
+
+        function showCookingPopup() {
+            const popup = document.getElementById('cooking-popup');
+            if (popup) {
+                popup.style.display = 'block';
+                setTimeout(() => {
+                    popup.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function showDeliveredPopup() {
+            const popup = document.getElementById('delivered-popup');
+            const statusCard = document.querySelector('.status-card:first-child');
+            const triggerStatus = document.getElementById('trigger-status');
+            
+            if (popup) {
+                popup.style.display = 'block';
+                // Change Smart Plug Status to OFF and red
+                statusCard.classList.remove('on');
+                statusCard.classList.add('off');
+                triggerStatus.textContent = 'OFF';
+                
+                setTimeout(() => {
+                    popup.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function updateLocationDisplays(driverLocation, customerLocation) {
+            // Calculate distance in miles
+            const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                driverLocation,
+                customerLocation
+            ) / 1609.34; // Convert meters to miles
+
+            // Update distance display
+            document.getElementById('distance').textContent = `${distance.toFixed(1)} miles`;
+        }
+
+        function updateETA(distance) {
+            // Calculate speed based on 0.6 miles = 5 minutes
+            // 0.6 miles / (5/60) hours = 7.2 mph
+            const speed = 7.2; // mph
+            const timeInHours = distance / speed;
+            const minutes = Math.round(timeInHours * 60);
+            
+            const etaDisplay = document.getElementById('eta');
+            if (minutes < 1) {
+                etaDisplay.textContent = 'Less than a minute';
+            } else {
+                etaDisplay.textContent = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+            }
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('last-update').textContent = `Last update: ${timeString}`;
+        }
+
+        function startTimeAwayCounter() {
+            startTime = new Date();
+            if (timeAwayInterval) clearInterval(timeAwayInterval);
+            timeAwayInterval = setInterval(updateTimeAway, 1000);
+        }
+
+        function updateTimeAway() {
+            if (!startTime) return;
+            const now = new Date();
+            const diffInMinutes = Math.floor((now - startTime) / 60000);
+            document.getElementById('time-away').textContent = `Current: ${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''}`;
+        }
+
+        function updateMap(driverLocation, customerLocation) {
+            console.log('Updating map with locations:', { driverLocation, customerLocation });
+            
+            if (animationFrame) {
+                console.log('Cancelling existing animation frame');
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+
+            // Remove the current polyline if it exists
+            if (currentPolyline) {
+                currentPolyline.setMap(null);
+                currentPolyline = null;
+            }
+
+            // Reset all states
+            hasTriggeredPopup = false;
+            hasTriggeredDelivered = false;
+            
+            // Reset Smart Plug Status
+            const statusCard = document.querySelector('.status-card:first-child');
+            const triggerStatus = document.getElementById('trigger-status');
+            statusCard.classList.remove('on', 'off');
+            triggerStatus.textContent = 'Waiting';
+            
+            driverMarker.setPosition(driverLocation);
+            customerMarker.setPosition(customerLocation);
+
+            // Update location displays
+            updateLocationDisplays(driverLocation, customerLocation);
+
+            const request = {
+                origin: driverLocation,
+                destination: customerLocation,
+                travelMode: 'DRIVING'
+            };
+
+            console.log('Requesting directions...');
+            directionsService.route(request, (result, status) => {
+                console.log('Directions response:', { status, result: !!result });
+                
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    routePath = result.routes[0].overview_path;
+                    console.log('Route path set, number of points:', routePath.length);
+                    
+                    // Create initial polyline for the full route
+                    currentPolyline = new google.maps.Polyline({
+                        path: routePath,
+                        strokeColor: '#ffffff',
+                        strokeOpacity: 0.8,
+                        strokeWeight: 3,
+                        map: map
+                    });
+                    
+                    // Calculate and update ETA
+                    const distance = result.routes[0].legs[0].distance.value / 1609.34; // Convert meters to miles
+                    updateETA(distance);
+                    updateTriggerStatus(distance);
+                    
+                    // Reset animation state
+                    isAnimating = true;
+                    currentPosition = 0;
+                    console.log('Starting animation with:', { isAnimating, currentPosition, animationSpeed });
+                    
+                    // Start animation
+                    animateDriver();
+                    
+                    // Update last update time
+                    updateLastUpdateTime();
+                } else {
+                    console.error('Directions request failed:', status);
+                }
+            });
+
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(driverLocation);
+            bounds.extend(customerLocation);
+            map.fitBounds(bounds);
+        }
+
+        function milesToDegrees(miles, direction) {
+            const degrees = miles / 69;
+            
+            let latOffset = 0;
+            let lngOffset = 0;
+            
+            switch(direction) {
+                case 'north':
+                    latOffset = degrees;
+                    lngOffset = 0;
+                    break;
+                case 'south':
+                    latOffset = -degrees;
+                    lngOffset = 0;
+                    break;
+                case 'east':
+                    latOffset = 0;
+                    lngOffset = degrees;
+                    break;
+                case 'west':
+                    latOffset = 0;
+                    lngOffset = -degrees;
+                    break;
+                case 'northeast':
+                    latOffset = degrees * 0.707;
+                    lngOffset = degrees * 0.707;
+                    break;
+                case 'northwest':
+                    latOffset = degrees * 0.707;
+                    lngOffset = -degrees * 0.707;
+                    break;
+                case 'southeast':
+                    latOffset = -degrees * 0.707;
+                    lngOffset = degrees * 0.707;
+                    break;
+                case 'southwest':
+                    latOffset = -degrees * 0.707;
+                    lngOffset = -degrees * 0.707;
+                    break;
+            }
+            
+            return {
+                lat: latOffset,
+                lng: lngOffset
+            };
+        }
+
+        function calculateDriverPosition(minutesAway) {
+            // Calculate distance based on speed (7.2 mph)
+            const distance = (minutesAway / 60) * 7.2; // miles
+            
+            // Calculate position northeast of customer
+            const latOffset = (distance / 69) * 0.707;
+            const lngOffset = (distance / 69) * 0.707;
+            
+            return {
+                lat: DEFAULT_COORDINATES.customer.lat + latOffset,
+                lng: DEFAULT_COORDINATES.customer.lng + lngOffset
+            };
+        }
+
+        // Add event listener for time input
+        document.getElementById('update-time').addEventListener('click', () => {
+            const minutes = parseInt(document.getElementById('time-away-input').value);
+            if (isNaN(minutes) || minutes < 0 || minutes > 60) {
+                alert('Please enter a valid time between 0 and 60 minutes');
+                return;
+            }
+            
+            const driverLocation = calculateDriverPosition(minutes);
+            updateMap(driverLocation, DEFAULT_COORDINATES.customer);
+            
+            // Update the time away display
+            document.getElementById('time-away').textContent = `Current: ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        });
+
+        // Initialize with 10 minutes away
+        window.addEventListener('load', () => {
+            const initialMinutes = 10;
+            document.getElementById('time-away-input').value = initialMinutes;
+            const driverLocation = calculateDriverPosition(initialMinutes);
+            updateMap(driverLocation, DEFAULT_COORDINATES.customer);
+            document.getElementById('time-away').textContent = `Current: ${initialMinutes} minute${initialMinutes !== 1 ? 's' : ''}`;
+        });
+
+        // Add event listener for Enter key in the time input
+        document.getElementById('time-away-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('update-time').click();
+            }
+        });
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBxLLjuBRmeOdmPEE1oDhziAfBXVwr-txY&libraries=geometry&callback=initMap"></script>
+</body>
+</html> 
