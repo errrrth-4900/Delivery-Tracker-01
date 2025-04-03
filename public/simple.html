@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple GPS Trigger</title>
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        #cooking-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #DB4437;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="cooking-popup">Cooking! 🍔</div>
+
+    <script>
+        let map;
+        let driverMarker;
+        let customerMarker;
+        let directionsRenderer;
+        let directionsService;
+        let routePath = null;
+        let currentPosition = 0;
+        let isAnimating = false;
+        let animationFrame = null;
+        let hasTriggeredPopup = false;
+
+        const TRIGGER_DISTANCE_MILES = 0.6;
+        const ANIMATION_SPEED = 0.0001;
+
+        const DEFAULT_COORDINATES = {
+            customer: { lat: 51.5200, lng: -0.1050 },
+            driver: { lat: 51.5350, lng: -0.0900 }
+        };
+
+        function initMap() {
+            console.log('Initializing map...');
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 13,
+                center: DEFAULT_COORDINATES.customer
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                map: map,
+                suppressMarkers: true
+            });
+
+            // Create driver marker
+            driverMarker = new google.maps.Marker({
+                map: map,
+                position: DEFAULT_COORDINATES.driver,
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="18" fill="#4285F4" stroke="white" stroke-width="2"/>
+                            <text x="20" y="25" font-size="20" text-anchor="middle" fill="white">🚗</text>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(40, 40),
+                    anchor: new google.maps.Point(20, 20)
+                }
+            });
+
+            // Create customer marker
+            customerMarker = new google.maps.Marker({
+                map: map,
+                position: DEFAULT_COORDINATES.customer,
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="18" fill="#DB4437" stroke="white" stroke-width="2"/>
+                            <text x="20" y="25" font-size="20" text-anchor="middle" fill="white">🏠</text>
+                        </svg>
+                    `),
+                    scaledSize: new google.maps.Size(40, 40),
+                    anchor: new google.maps.Point(20, 20)
+                }
+            });
+
+            updateMap(DEFAULT_COORDINATES.driver, DEFAULT_COORDINATES.customer);
+            console.log('Map initialized successfully');
+        }
+
+        function animateDriver() {
+            if (!routePath || !isAnimating) return;
+
+            const numPoints = routePath.getLength();
+            currentPosition = (currentPosition + ANIMATION_SPEED) % 1;
+            const point = routePath.getAt(Math.floor(currentPosition * numPoints));
+            
+            driverMarker.setPosition(point);
+            
+            const distanceToCustomer = google.maps.geometry.spherical.computeDistanceBetween(
+                point,
+                customerMarker.getPosition()
+            ) / 1609.34;
+
+            if (distanceToCustomer <= TRIGGER_DISTANCE_MILES && !hasTriggeredPopup) {
+                showCookingPopup();
+                hasTriggeredPopup = true;
+            }
+            
+            animationFrame = requestAnimationFrame(animateDriver);
+        }
+
+        function showCookingPopup() {
+            const popup = document.getElementById('cooking-popup');
+            if (popup) {
+                popup.style.display = 'block';
+                setTimeout(() => {
+                    popup.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function updateMap(driverLocation, customerLocation) {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+
+            hasTriggeredPopup = false;
+            driverMarker.setPosition(driverLocation);
+            customerMarker.setPosition(customerLocation);
+
+            const request = {
+                origin: driverLocation,
+                destination: customerLocation,
+                travelMode: 'DRIVING'
+            };
+
+            directionsService.route(request, (result, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    routePath = result.routes[0].overview_path;
+                    isAnimating = true;
+                    currentPosition = 0;
+                    requestAnimationFrame(animateDriver);
+                }
+            });
+
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(driverLocation);
+            bounds.extend(customerLocation);
+            map.fitBounds(bounds);
+        }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBxLLjuBRmeOdmPEE1oDhziAfBXVwr-txY&libraries=geometry&callback=initMap"></script>
+</body>
+</html> 

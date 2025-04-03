@@ -1,0 +1,19 @@
+{
+  "name": "gps-trigger-app",
+  "version": "1.0.0",
+  "description": "Simulation app for GPS-based smart plug triggering system",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+} 
